@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import UserRepository from "../repositories/UserRepository";
+import authenticateMiddleware from "../middlewares/authMiddleware";
 
 class UserRouter {
   public router: Router;
@@ -10,11 +11,12 @@ class UserRouter {
   }
 
   private initializeRoutes() {
-    this.router.get("/", this.getAllUsers);
+    this.router.get("/", authenticateMiddleware, this.getAllUsers);
     this.router.post("/", this.createUser);
     this.router.get("/:id", this.getUserById);
     this.router.put("/:id", this.updateUser);
     this.router.delete("/:id", this.removeUser);
+    this.router.post("/auth", this.authenticateUser);
   }
 
   private async getAllUsers(req: Request, res: Response) {
@@ -43,6 +45,15 @@ class UserRouter {
     const id = parseInt(req.params.id);
     await UserRepository.removeUser(id);
     res.status(201).json({ message: "Registro removido com sucesso" });
+  }
+
+  private async authenticateUser(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
+    const authData = req.body;
+    const token = await UserRepository.auth(authData);
+    return res.status(201).json(token);
   }
 }
 
